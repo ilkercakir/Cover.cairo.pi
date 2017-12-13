@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Cover
+Comment=Cover
+Exec=/home/pi/Desktop/C/Cover.cairo.pi/Cover %F
+Icon=/home/pi/Desktop/C/Cover.cairo.pi/Garage-Band-icon.png
+Terminal=false
+Path=/home/pi/Desktop/C/Cover.cairo.pi
+GenericName=Cover
+StartupNotify=false
+Name[tr_TR]=Cover.cairo.pi
+Categories=GNOME;GTK;Audio;Video
+
