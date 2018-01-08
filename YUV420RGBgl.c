@@ -186,11 +186,13 @@ void init_vertices_indices(oglstate *ogl)
 	if (ogl->linewidth>ogl->width)
 	{
 		ogl->tVertices[6] = ogl->tVertices[4] = (float)ogl->width / (float)ogl->linewidth;
+		//printf("rescale width %2.5f\n", (float)ogl->width / (float)ogl->linewidth);
 	}
 //rescale height
 	if (ogl->height>ogl->codecheight)
 	{
-		ogl->tVertices[5] = ogl->tVertices[3] = (float)ogl->codecheight / (float)ogl->height;
+		ogl->tVertices[7] = ogl->tVertices[1] = (float)ogl->codecheight / (float)ogl->height;
+		//printf("rescale height %2.5f\n", (float)ogl->codecheight / (float)ogl->height);
 	}
 
 	for(i=0;i<sizeof(xIndices)/sizeof(GLushort);i++)
@@ -880,6 +882,12 @@ void realize_da_event(GtkWidget *widget, gpointer data)
 
 	int width, height, imgsize, j;
 
+	GtkAllocation* alloc = g_new(GtkAllocation, 1);
+	gtk_widget_get_allocation(widget, alloc);
+	width = alloc->width;
+	height = alloc->height;
+	g_free(alloc);
+
 	// Start idle thread
 	oglidle_start(oi);
 
@@ -899,16 +907,13 @@ void realize_da_event(GtkWidget *widget, gpointer data)
 	free(oi->data.buf);
 
 	// initialize pixbuf
-	GtkAllocation* alloc = g_new(GtkAllocation, 1);
-	gtk_widget_get_allocation(widget, alloc);
-	width = alloc->width;
-	height = alloc->height;
-	g_free(alloc);
-
 	imgsize = width * height * 4;
 	oi->data.imgdata = malloc(imgsize); // w*h RGBA
-	for(j=0;j<imgsize;j++)
-		oi->data.imgdata[j] = 0x90;
+//	for(j=0;j<imgsize;j++)
+//		oi->data.imgdata[j] = 0x90;
+
+	oglidle_thread_draw_widget(oi);
+	oglidle_thread_readpixels_ogl(oi);
 
 	pthread_mutex_lock(oi->data.pixbufmutex);
 	oi->data.pix = gdk_pixbuf_new_from_data((const guchar*)oi->data.imgdata, GDK_COLORSPACE_RGB, TRUE, 8, width, height, width*4, destroynotify_pix, NULL);
@@ -946,6 +951,9 @@ gboolean size_allocate_da_event(GtkWidget *widget, GdkRectangle *allocation, gpo
 	oi->data.imgdata = malloc(imgsize); // w*h RGBA
 	oi->data.pix = gdk_pixbuf_new_from_data((const guchar*)oi->data.imgdata, GDK_COLORSPACE_RGB, TRUE, 8, width, height, width*4, destroynotify_pix, NULL);
 	pthread_mutex_unlock(oi->data.pixbufmutex);
+
+	oglidle_thread_draw_widget(oi);
+	oglidle_thread_readpixels_ogl(oi);
 
 //printf("size_allocate_da_event\n");
 	return FALSE;

@@ -713,9 +713,31 @@ static void vp_toggled(GtkWidget *togglebutton, gpointer data)
 	toggle_vp(vpw, togglebutton);
 }
 
+void setup_default_icon(char *filename)
+{
+	GdkPixbuf *pixbuf;
+	GError *err;
+
+	err = NULL;
+	pixbuf = gdk_pixbuf_new_from_file(filename, &err);
+
+	if (pixbuf)
+	{
+		GList *list;      
+
+		list = NULL;
+		list = g_list_append(list, pixbuf);
+		gtk_window_set_default_icon_list(list);
+		g_list_free(list);
+		g_object_unref(pixbuf);
+    }
+}
+
 int main(int argc, char *argv[])
 {
 	setlocale(LC_ALL, "tr_TR.UTF-8");
+
+	setup_default_icon("./Cover.png");
 
 	init_playlistparams(&plparams, &vpw1, &mic, &spk, 20, 20, samplingrate, 4); // video, audio, spk_samplingrate, thread_count
 
