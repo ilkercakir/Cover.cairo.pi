@@ -169,7 +169,8 @@ int init_audio_hw_spk(speaker *s)
 	int err;
 
 	s->persize = 1024; // frames
-	s->bufsize = 10240; // persize * 10; // 10 periods
+	//s->bufsize = 10240; // persize * 10; // 10 periods
+	s->bufsize = s->persize * 3; // 3 periods
 
 	snd_pcm_hw_params_alloca(&(s->hwparams));
 	snd_pcm_sw_params_alloca(&(s->swparams));

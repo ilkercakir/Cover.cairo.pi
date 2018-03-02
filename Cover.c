@@ -1,4 +1,3 @@
-
 /*
  * Cover.c
  * 
@@ -23,8 +22,8 @@
  */
 
 /*
-compile with gcc -Wall -c "%f" -DUSE_OPENGL -DUSE_EGL -DIS_RPI -DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -g -ftree-vectorize -pipe -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi -mcpu=cortex-a53 -mfloat-abi=hard -mfpu=neon-fp-armv8 -mneon-for-64bits $(pkg-config --cflags gtk+-3.0) -I/opt/vc/include/ -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -Wno-deprecated-declarations
-link with gcc -Wall -o "%e" "%f" AudioDev.o AudioEffects.o AudioMic.o AudioMixer.o AudioPipe.o AudioSpk.o BiQuad.o VideoPlayerWidgets.o VideoPlayer.o VideoQueue.o YUV420RGBgl.o $(pkg-config --cflags gtk+-3.0) -Wl,--whole-archive -I/opt/vc/include -L/opt/vc/lib/ -lGLESv2 -lEGL -lbcm_host -lvchiq_arm -lpthread -lrt -ldl -lm -Wl,--no-whole-archive -rdynamic $(pkg-config --libs gtk+-3.0) $(pkg-config --libs libavcodec libavformat libavutil libswscale) -lasound $(pkg-config --libs gtk+-3.0) $(pkg-config --libs sqlite3)
+compile with gcc -Wall -c "%f" -DUSE_OPENGL -DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -g -ftree-vectorize -pipe -Wno-psabi $(pkg-config --cflags libavcodec libavformat libavutil libswscale libswresample) $(pkg-config --cflags gtk+-3.0) -Wno-deprecated-declarations
+link with gcc -Wall -o "%e" "%f" AudioDev.o AudioEffects.o AudioMic.o AudioMixer.o AudioPipe.o AudioSpk.o BiQuad.o VideoPlayerWidgets.o VideoPlayer.o VideoQueue.o YUV420RGBgl.o -Wl,--whole-archive -Wl,--no-whole-archive -rdynamic $(pkg-config --cflags gtk+-3.0) $(pkg-config --libs libavcodec libavformat libavutil libswscale libswresample) -lpthread -lrt -ldl -lm -lGL -lX11 $(pkg-config --libs gtk+-3.0) -lasound $(pkg-config --libs gtk+-3.0) $(pkg-config --libs sqlite3)
  */
 
 #define _GNU_SOURCE
@@ -35,7 +34,6 @@ link with gcc -Wall -o "%e" "%f" AudioDev.o AudioEffects.o AudioMic.o AudioMixer
 #include "AudioMixer.h"
 #include "AudioSpk.h"
 #include "BiQuad.h"
-#include "YUV420RGBgl.h"
 #include "VideoPlayer.h"
 #include "VideoPlayerWidgets.h"
 
@@ -47,6 +45,7 @@ GtkWidget *window;
 GtkWidget *fxbox;
 GtkWidget *confbox;
 GtkWidget *frameconf;
+GtkWidget *confgrid;
 GtkWidget *inputdevlabel;
 GtkWidget *comboinputdev;
 GtkWidget *frameslabel;
@@ -96,8 +95,8 @@ GtkWidget *spinbutton8;
 GtkWidget *rvrbbox2;
 GtkWidget *rvrbdelays;
 GtkWidget *comborvrbdelays;
-GtkWidget *rvrblabel3;
-GtkWidget *spinbutton11;
+//GtkWidget *rvrblabel3;
+//GtkWidget *spinbutton11;
 GtkWidget *rvrblabel4;
 GtkWidget *spinbutton18;
 eqdefaults reverbeqdef;
@@ -203,7 +202,6 @@ static gpointer recorderthread(gpointer args)
 
 	int err;
 
-	//mic.device = "hw:1,0";
 	gchar *strval;
 	g_object_get((gpointer)comboinputdev, "active-id", &strval, NULL);
 	if (strval)
@@ -342,14 +340,6 @@ static gpointer thread0(gpointer args)
 	push_message(statusbar, context_id, delayms);
 
 	int err;
-	err = pthread_create(&(tid[1]), NULL, &recorderthread, NULL);
-	if (err)
-	{}
-//printf("recorderthread->%d\n", 1);
-	CPU_ZERO(&(cpu[1]));
-	CPU_SET(1, &(cpu[1]));
-	if ((err=pthread_setaffinity_np(tid[1], sizeof(cpu_set_t), &(cpu[1]))))
-		printf("pthread_setaffinity_np error %d\n", err);
 
 	err = pthread_create(&(tid[2]), NULL, &mixerthread, NULL);
 	if (err)
@@ -358,7 +348,20 @@ static gpointer thread0(gpointer args)
 	CPU_ZERO(&(cpu[1]));
 	CPU_SET(1, &(cpu[1]));
 	if ((err=pthread_setaffinity_np(tid[2], sizeof(cpu_set_t), &(cpu[1]))))
-		printf("pthread_setaffinity_np error %d\n", err);
+	{
+		//printf("pthread_setaffinity_np error %d\n", err);
+	}
+
+	err = pthread_create(&(tid[1]), NULL, &recorderthread, NULL);
+	if (err)
+	{}
+//printf("recorderthread->%d\n", 1);
+	CPU_ZERO(&(cpu[1]));
+	CPU_SET(1, &(cpu[1]));
+	if ((err=pthread_setaffinity_np(tid[1], sizeof(cpu_set_t), &(cpu[1]))))
+	{
+		//printf("pthread_setaffinity_np error %d\n", err);
+	}
 
 	int i;
 	if ((i=pthread_join(tid[1], NULL)))
@@ -425,7 +428,7 @@ static void destroy(GtkWidget *widget, gpointer data)
 static void realize_cb(GtkWidget *widget, gpointer data)
 {
 	g_object_set((gpointer)delay1.combodelaytype, "active-id", "0", NULL);
-	g_object_set((gpointer)reverb1.comborvrbdelays, "active-id", "12", NULL);
+	g_object_set((gpointer)reverb1.comborvrbdelays, "active-id", "24", NULL);
 }
 
 static void inputdev_changed(GtkWidget *combo, gpointer data)
@@ -678,6 +681,7 @@ static void rvrbpresence_changed(GtkWidget *widget, gpointer data)
 	pthread_mutex_unlock(&(r->sndreverb.reverbmutex));
 }
 
+/*
 static void rvrbLSH_changed(GtkWidget *widget, gpointer data)
 {
 	reverbeffect *r = (reverbeffect*)data;
@@ -699,6 +703,21 @@ static void rvrbLPF_changed(GtkWidget *widget, gpointer data)
 	pthread_mutex_lock(&(r->sndreverb.reverbmutex));
 	float newvalue = (float)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
 	r->reverbeqdef.eqfreqs[1] = newvalue;
+	if (r->sndreverb.enabled)
+	{
+		soundreverb_reinit(r->sndreverb.reverbdelaylines, r->sndreverb.feedback, r->sndreverb.presence, &(r->reverbeqdef), &(r->sndreverb));
+	}
+	pthread_mutex_unlock(&(r->sndreverb.reverbmutex));
+}
+*/
+
+static void rvrbHSH_changed(GtkWidget *widget, gpointer data)
+{
+	reverbeffect *r = (reverbeffect*)data;
+
+	pthread_mutex_lock(&(r->sndreverb.reverbmutex));
+	float newvalue = (float)gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+	r->reverbeqdef.eqfreqs[0] = newvalue;
 	if (r->sndreverb.enabled)
 	{
 		soundreverb_reinit(r->sndreverb.reverbdelaylines, r->sndreverb.feedback, r->sndreverb.presence, &(r->reverbeqdef), &(r->sndreverb));
@@ -730,7 +749,7 @@ void setup_default_icon(char *filename)
 		gtk_window_set_default_icon_list(list);
 		g_list_free(list);
 		g_object_unref(pixbuf);
-    }
+    	}
 }
 
 int main(int argc, char *argv[])
@@ -746,6 +765,8 @@ int main(int argc, char *argv[])
 		//wprintf(L"multiple instance\n");
 		exit(0);
 	}
+
+	XInitThreads();
 
 	/* This is called in all GTK applications. Arguments are parsed
 	 * from the command line and are returned to the application. */
@@ -975,6 +996,7 @@ int main(int argc, char *argv[])
     g_signal_connect(GTK_COMBO_BOX(reverb1.comborvrbdelays), "changed", G_CALLBACK(delaylines_changed), &reverb1);
     gtk_container_add(GTK_CONTAINER(reverb1.rvrbbox2), reverb1.comborvrbdelays);
 
+/*
 // LSH
 	reverb1.rvrblabel4 = gtk_label_new("LSH (Hz)");
 	gtk_widget_set_size_request(reverb1.rvrblabel4, 100, 30);
@@ -994,7 +1016,16 @@ int main(int argc, char *argv[])
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(reverb1.spinbutton11), reverb1.reverbeqdef.eqfreqs[1]);
 	g_signal_connect(GTK_SPIN_BUTTON(reverb1.spinbutton11), "value-changed", G_CALLBACK(rvrbLPF_changed), &reverb1);
 	gtk_container_add(GTK_CONTAINER(reverb1.rvrbbox2), reverb1.spinbutton11);
-
+*/
+// HSH
+	reverb1.rvrblabel4 = gtk_label_new("HSH (Hz)");
+	gtk_widget_set_size_request(reverb1.rvrblabel4, 100, 30);
+	gtk_container_add(GTK_CONTAINER(reverb1.rvrbbox2), reverb1.rvrblabel4);
+	reverb1.spinbutton18 = gtk_spin_button_new_with_range(1.0, 8000.0, 100.0);
+	gtk_widget_set_size_request(reverb1.spinbutton18, 120, 30);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(reverb1.spinbutton18), reverb1.reverbeqdef.eqfreqs[0]);
+	g_signal_connect(GTK_SPIN_BUTTON(reverb1.spinbutton18), "value-changed", G_CALLBACK(rvrbHSH_changed), &reverb1);
+	gtk_container_add(GTK_CONTAINER(reverb1.rvrbbox2), reverb1.spinbutton18);
 
 // statusbar
 	statusbar = gtk_statusbar_new();

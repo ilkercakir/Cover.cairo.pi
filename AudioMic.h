@@ -53,6 +53,8 @@ typedef struct
 	int capturebuffersize;
 	michaas mh;
 	int nullsamples;
+	snd_pcm_sframes_t availp;
+	snd_pcm_sframes_t delayp;
 }microphone;
 
 int init_audio_hw_mic(microphone *m);

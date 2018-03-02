@@ -331,7 +331,7 @@ void soundmod_close(soundmod *m)
 	pthread_mutex_destroy(&(m->modmutex));
 }
 
-
+/*
 void set_reverbeq(eqdefaults *d)
 {
 	float default_eqfreqs[2] = {500.0, 5000.0};
@@ -341,6 +341,24 @@ void set_reverbeq(eqdefaults *d)
 
 	int i;
 	for(i=0;i<2;i++)
+	{
+		d->eqfreqs[i] = default_eqfreqs[i];
+		strcpy(d->eqlabels[i], default_eqlabels[i]);
+		d->filtertypes[i] = default_filtertypes[i];
+		d->dbGains[i] = default_dbGains[i];
+	}
+}
+*/
+
+void set_reverbeq(eqdefaults *d)
+{
+	float default_eqfreqs[1] = {4000.0};
+	char* default_eqlabels[1] = {"HSH"};
+	filtertype default_filtertypes[] = {HSH};
+	float default_dbGains[1] = {-12.0};
+
+	int i;
+	for(i=0;i<1;i++)
 	{
 		d->eqfreqs[i] = default_eqfreqs[i];
 		strcpy(d->eqlabels[i], default_eqlabels[i]);
@@ -399,7 +417,8 @@ void soundreverb_reinit(int delaylines, float feedback, float presence, eqdefaul
 
 	r->eqoctave = 1.0;
 
-	AudioEqualizer_init(&(r->reveq), 2, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
+	//AudioEqualizer_init(&(r->reveq), 2, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
+	AudioEqualizer_init(&(r->reveq), 1, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
 }
 
 void soundreverb_init(int delaylines, float feedback, float presence, eqdefaults *d, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundreverb *r)
@@ -421,7 +440,8 @@ void soundreverb_init(int delaylines, float feedback, float presence, eqdefaults
 	r->bbuf = NULL;
 	r->eqoctave = 1.0;
 
-	AudioEqualizer_init(&(r->reveq), 2, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
+	//AudioEqualizer_init(&(r->reveq), 2, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
+	AudioEqualizer_init(&(r->reveq), 1, r->eqoctave, 1, 1, r->format, r->rate, r->channels, d);
 
 	if((ret=pthread_mutex_init(&(r->reverbmutex), NULL))!=0 )
 		printf("reverb mutex init failed, %d\n", ret);

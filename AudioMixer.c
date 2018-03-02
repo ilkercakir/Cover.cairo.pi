@@ -161,6 +161,7 @@ mxstatus readfrommixer(audiomixer *x)
 			int *readoffset = &(x->ac[i]->readoffset);
 			int writeoffset = 0;
 			int samplestoread = x->outbuffersamples;
+			//printf("channel %d %d\n", i, ((*rear)-(*front)+x->ac[i]->channelbuffers)%x->ac[i]->channelbuffers);
 			while (samplestoread)
 			{
 				signed short *fshort = (signed short *)(channelbuffer[(*front)]);
@@ -207,11 +208,11 @@ mxstatus readfrommixer(audiomixer *x)
 					if ((*front) == (*rear))
 					{
 						samplestoread = 0;
-//printf("channel %d skipping %d samples from %d to %d\n", i, samplesreadable, (*readoffset), writeoffset);
+//if (!i) printf("channel %d skipping %d samples from %d to %d\n", i, samplesreadable, (*readoffset), writeoffset);
 					}
 					else
 					{
-//printf("channel %d writing %d samples from %d to %d\n", i, samplesreadable, (*readoffset), writeoffset);
+//if (!i) printf("channel %d writing %d samples from %d to %d\n", i, samplesreadable, (*readoffset), writeoffset);
 						for(j=0;j<samplesreadable;j++,samplestoread--)
 						{
 							x->outshort[writeoffset++] += fshort[(*readoffset)++] * x->prescale;
@@ -327,10 +328,19 @@ void close_audiojack(audiojack *aj)
 	}
 }
 
-/*
-void jack_initialize(int channelbuffers, audiojack *aj)
+float getdelay_audiojack(audiojack *aj)
 {
-	aj->mxchannel = -1;
-	aj->channelbuffers = channelbuffers;
+	float delay;
+
+	pthread_mutex_lock(aj->x->xmutex);
+	if (aj->mxchannel==-1)
+		delay = 0.0;
+	else
+	{
+		delay = (float)((*(aj->rear) - *(aj->front) + aj->channelbuffers) % aj->channelbuffers) * 1000.0f * (float)aj->jackframes / (float)aj->x->rate;
+		//printf("%d %d %d %d %d\n", *(aj->rear), *(aj->front), aj->channelbuffers, aj->jackframes, aj->x->rate);
+	}
+	pthread_mutex_unlock(aj->x->xmutex);
+
+	return(delay); // delay in ms
 }
-*/

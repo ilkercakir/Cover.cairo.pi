@@ -77,6 +77,6 @@ void connect_audiojack(int channelbuffers, audiojack *aj, audiomixer *x);
 void init_audiojack(int channelbuffers, int buffersize, audiojack *aj);
 void writetojack(char* inbuffer, int inbuffersize, audiojack *aj);
 void close_audiojack(audiojack *aj);
-//void jack_initialize(int channelbuffers, audiojack *aj);
+float getdelay_audiojack(audiojack *aj);
 
 #endif

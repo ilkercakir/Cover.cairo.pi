@@ -80,7 +80,8 @@ printf("supported input channels: %d\n", m->micchannels);
 	m->micbuffersize = m->micbuffersamples * ( snd_pcm_format_width(m->format) / 8 );
 	m->micbuffer = malloc(m->micbuffersize);
 	memset(m->micbuffer, 0, m->micbuffersize);
-	m->capturebuffersize = m->micbuffersize * 10; // 10 buffers
+	//m->capturebuffersize = m->micbuffersize * 10; // 10 buffers
+	m->capturebuffersize = m->micbuffersize * 6; // 6 buffers
 	m->prescale = 1.0 / sqrt(m->micchannels);
 //printf("buffersize %d\n", m->capturebuffersize);
 	if ((err = snd_pcm_hw_params_set_buffer_size(m->capture_handle, m->hw_params, m->capturebuffersize)) < 0)
@@ -304,17 +305,6 @@ int read_mic(microphone *m)
 	pthread_mutex_lock(m->micmutex);
 	int i, j, err, result = 1;
 
-/*
-	err = snd_pcm_readi(m->capture_handle, m->buffer, m->bufferframes);
-	if (err == -EAGAIN) printf("EAGAIN mic\n");
-	if (err < 0)
-	{
-		if (xrun_recovery(m->capture_handle, err) < 0)
-		{
-			printf("snd_pcm_readi error: %s\n", snd_strerror(err));
-		}
-	}
-*/
 	err = snd_pcm_readi(m->capture_handle, m->micbuffer, m->micbufferframes);
 	if (err == -EAGAIN) printf("EAGAIN mic\n");
 	if (err < 0)
@@ -324,6 +314,8 @@ int read_mic(microphone *m)
 			printf("snd_pcm_readi error: %s\n", snd_strerror(err));
 		}
 	}
+	err=snd_pcm_avail_delay(m->capture_handle, &(m->availp), &(m->delayp));
+	//printf("\t%d\t%d\n", (int)m->availp, (int)m->delayp);
 
 	signed short *src = (signed short *)m->micbuffer;
 	signed short *dest = (signed short *)m->buffer;

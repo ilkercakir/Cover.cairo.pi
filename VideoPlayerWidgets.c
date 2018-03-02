@@ -82,6 +82,7 @@ static int nomediafile(char *filepath)
 	return
 	(
 		strcmp(strlastpart(filepath, ".", 1), ".mp3") &&
+		strcmp(strlastpart(filepath, ".", 1), ".m4a") &&
 		strcmp(strlastpart(filepath, ".", 1), ".wav") &&
 
 		strcmp(strlastpart(filepath, ".", 1), ".mp4") &&
@@ -395,7 +396,7 @@ static GtkTreeModel* create_and_fill_model(vpwidgets *vpw, int mode, int argc, c
 			for(rc=1;rc<argc;rc++)
 			{
 				gtk_list_store_append(vpw->store, &(vpw->iter));
-				gtk_list_store_set(vpw->store, &(vpw->iter), COL_ID, rc, COL_FILEPATH, argv[rc], -1);
+				gtk_list_store_set(vpw->store, &(vpw->iter), COL_ID, rc-1, COL_FILEPATH, argv[rc], -1);
 			}
 		default:
 			break;
