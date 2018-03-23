@@ -6,7 +6,11 @@
 #include <math.h>
 #include <pthread.h>
 #include <alsa/asoundlib.h>
+#include <sqlite3.h>
 #include "BiQuad.h"
+
+#define MAXCHORUS 3
+#define REVERBDLINES 24
 
 typedef enum
 {
@@ -77,24 +81,27 @@ typedef struct
 	soundvfo v;
 }soundmod;
 
-#define REVERBDLINES 24
-
 typedef struct
 {
+	int reflect;
 	int reverbdelaylines;
-	sounddelay snddlyrev[REVERBDLINES];
+	float *reverbprimes;
+	float *feedbacks;
+	sounddelay *snddlyrev;
 	char* bbuf;
 
 	snd_pcm_format_t format; // SND_PCM_FORMAT_S16
 	unsigned int rate; // sampling rate
 	unsigned int channels; // channels
 	float feedback; // feedback level 0.0 .. 1.0
-	float presence; // reverbation presence
+	float presence; // reverbation presence 0.0 .. 1.0
 	int enabled;
 	pthread_mutex_t reverbmutex; // = PTHREAD_MUTEX_INITIALIZER;
 
 	float eqoctave;
 	audioequalizer reveq;
+	float alpha; // -ln(feedbacks[0])/reverbprimes[0]
+	int i;
 }soundreverb;
 
 typedef struct
@@ -125,7 +132,19 @@ typedef struct
 	int insamples;
 }soundfoldingdistortion;
 
-#define MAXCHORUS 3
+typedef struct
+{
+	snd_pcm_format_t format; // SND_PCM_FORMAT_S16
+	unsigned int rate; // sampling rate
+	unsigned int channels; // channels
+	float a, denom, nf, dnf;
+	int enabled;
+	pthread_mutex_t odmutex; // = PTHREAD_MUTEX_INITIALIZER;
+
+	int initialized;
+	int physicalwidth;
+	int insamples;
+}soundoverdrive;
 
 typedef struct
 {
@@ -137,6 +156,8 @@ typedef struct
 
 	int maxcho;
 	soundvfo v[MAXCHORUS];
+	float chofreq[MAXCHORUS];
+	float chodepth[MAXCHORUS];
 }soundcho;
 
 typedef struct
@@ -184,8 +205,8 @@ void soundmod_init(float modfreq, float moddepth, snd_pcm_format_t format, unsig
 void soundmod_add(char* inbuffer, int inbuffersize, soundmod *m);
 void soundmod_close(soundmod *m);
 void set_reverbeq(eqdefaults *d);
-void soundreverb_reinit(int delaylines, float feedback, float presence, eqdefaults *d, soundreverb *r);
-void soundreverb_init(int delaylines, float feedback, float presence, eqdefaults *d, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundreverb *r);
+void soundreverb_reinit(int reflect, int delaylines, float feedback, float presence, eqdefaults *d, soundreverb *r);
+void soundreverb_init(int reflect, int delaylines, float feedback, float presence, eqdefaults *d, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundreverb *r);
 void soundreverb_add(char* inbuffer, int inbuffersize, soundreverb *r);
 void soundreverb_close(soundreverb *r);
 void soundtremolo_init(float depth, float tremolorate, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundtremolo *t);
@@ -194,6 +215,10 @@ void soundtremolo_close(soundtremolo *t);
 void soundfoldingdistort_init(float threshold, float gain, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundfoldingdistortion *d);
 void soundfoldingdistort_add(char* inbuffer, int inbuffersize, soundfoldingdistortion *d);
 void soundfoldingdistort_close(soundfoldingdistortion *d);
+void soundoverdrive_set(float clip, soundoverdrive *o);
+void soundoverdrive_init(float clip, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundoverdrive *o);
+void soundoverdrive_add(char* inbuffer, int inbuffersize, soundoverdrive *o);
+void soundoverdrive_close(soundoverdrive *o);
 void soundcho_init(int maxcho, snd_pcm_format_t format, unsigned int rate, unsigned int channels, soundcho *c);
 void soundcho_add(char* inbuffer, int inbuffersize, soundcho *c);
 void soundcho_close(soundcho *c);

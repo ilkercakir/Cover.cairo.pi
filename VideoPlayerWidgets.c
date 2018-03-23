@@ -2420,7 +2420,7 @@ void vpw_commandline(playlistparams *plp, int argcount)
 		listview_onRowActivated(GTK_TREE_VIEW(vpw->listview), tp, NULL, plp);
 		gtk_tree_path_free(tp);
 
-		gdk_threads_add_idle(setnotebooktab1, vpw);
+		//gdk_threads_add_idle(setnotebooktab1, vpw);
 	}
 }
 
