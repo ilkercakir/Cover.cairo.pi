@@ -252,7 +252,8 @@ gboolean statusbar_msg(gpointer data)
 			pos -= 45;
 			strcat(msgtext, txt+pos);
 		}
-		sprintf(vpw->msg, "%s (%02i:%02i)", msgtext, ((int)(v->audioduration/v->sample_rate))/60, ((int)(v->audioduration/v->sample_rate)%60));
+		//sprintf(vpw->msg, "%s (%02i:%02i)", msgtext, ((int)(v->audioduration/v->sample_rate))/60, ((int)(v->audioduration/v->sample_rate)%60));
+		sprintf(vpw->msg, "%s (%02i:%02i)", msgtext, ((int)(v->audioduration/v->spk_samplingrate))/60, ((int)(v->audioduration/v->spk_samplingrate)%60));
 	}
 //printf("%s\n", msg);
 	gchar *buff = g_strdup_printf("%s", vpw->msg);
@@ -1360,13 +1361,8 @@ void listview_onRowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeVi
 	GtkTreeIter iter;
 	//gchar *s;
 
-	if (vpp->vpq.playerstatus==PAUSED)
-	{
-		requeststop_videoplayer(&(vpw->vp));
-		vpp->vpq.playerstatus = PLAYING;
-		gtk_button_set_label(GTK_BUTTON(vpw->button10), "Pause");
-		pthread_mutex_unlock(&(vpp->seekmutex));
-	}
+	press_vp_resume_button(plp); // Press resume if paused 
+	press_vp_stop_button(plp); // Press stop if playing
 
 //g_print("double-clicked\n");
 	model = gtk_tree_view_get_model(treeview);
@@ -1375,10 +1371,6 @@ void listview_onRowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeVi
 		//s=gtk_tree_path_to_string(path);
 		//printf("%s\n",s);
 		//g_free(s);
-		if (!(vpp->vpq.playerstatus == IDLE))
-		{
-			button2_clicked(vpw->button2, userdata);
-		}
 		if (vpp->now_playing)
 		{
 			g_free(vpp->now_playing);
@@ -1387,8 +1379,6 @@ void listview_onRowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeVi
 		gtk_tree_model_get(model, &iter, COL_FILEPATH, &(vpp->now_playing), -1);
 //g_print ("Double-clicked path %s\n", vpp->now_playing);
 
-		if (vpp->vpq.playerstatus!=IDLE)
-			button2_clicked(vpw->button2, userdata);
 		button1_clicked(vpw->button1, userdata);
 	}
 }
